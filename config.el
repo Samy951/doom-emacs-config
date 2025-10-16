@@ -32,7 +32,7 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-one)
+(setq doom-theme 'doom-homage-black)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -149,13 +149,13 @@
 
 ;; Configure lsp-ui for optimal TypeScript/NestJS development
 (after! lsp-ui
-  ;; lsp-ui-sideline: Show hover info, diagnostics and code actions on the side
+  ;; lsp-ui-sideline: Uniquement les erreurs/diagnostics
   (setq lsp-ui-sideline-enable t
-        lsp-ui-sideline-show-hover t           ; Show hover messages
-        lsp-ui-sideline-show-diagnostics t     ; Show flycheck errors
-        lsp-ui-sideline-show-code-actions t    ; Show quick fixes
-        lsp-ui-sideline-update-mode 'point     ; Update when cursor moves
-        lsp-ui-sideline-delay 0.2)             ; Show quickly
+        lsp-ui-sideline-show-hover nil         ; Désactivé
+        lsp-ui-sideline-show-diagnostics t     ; UNIQUEMENT les erreurs TypeScript
+        lsp-ui-sideline-show-code-actions nil  ; Désactivé (causait spam messages)
+        lsp-ui-sideline-update-mode 'line      ; Update par ligne (moins agressif)
+        lsp-ui-sideline-delay 0.5)             ; Délai augmenté pour éviter spam
 
   ;; lsp-ui-peek: Preview definitions/references without leaving current file
   (setq lsp-ui-peek-enable t
@@ -186,6 +186,12 @@
   '(lsp-headerline-breadcrumb-path-face :underline nil)
   '(lsp-headerline-breadcrumb-separator-face :underline nil)
   '(lsp-headerline-breadcrumb-symbols-face :underline nil))
+
+;; Customize inlay hints to be distinct from comments (comments are green in homage-black)
+(custom-set-faces!
+  '(lsp-inlay-hint-face :foreground "#7c9fc9" :background nil :slant italic :height 0.9)
+  '(lsp-inlay-hint-type-face :foreground "#7c9fc9" :background nil :slant italic :height 0.9)
+  '(lsp-inlay-hint-parameter-face :foreground "#9d9fc9" :background nil :slant italic :height 0.9))
 
 ;; Force tree-sitter modes for TypeScript
 (add-to-list 'major-mode-remap-alist '(typescript-mode . typescript-ts-mode))
