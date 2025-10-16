@@ -42,6 +42,227 @@
 ;; change `org-directory'. It must be set before org loads!
 (setq org-directory "~/org/")
 
+;;; ============================================================================
+;;; Configuration Org Mode & Agenda
+;;; ============================================================================
+
+;; Fichiers pour l'agenda - ajoutez tous vos fichiers .org ici
+(setq org-agenda-files '("~/org/agenda.org"
+                         "~/org/tasks.org"
+                         "~/org/work.org"
+                         "~/org/personal.org"))
+
+;; États des tâches avec raccourcis clavier
+(after! org
+  (setq org-todo-keywords
+        '((sequence "TODO(t)" "IN-PROGRESS(p)" "WAITING(w)" "|" "DONE(d)" "CANCELLED(c)")
+          (sequence "IDEA(i)" "PLANNING(l)" "READY(r)" "|" "COMPLETED(C)")))
+
+  ;; Couleurs pour les états
+  (setq org-todo-keyword-faces
+        '(("TODO" . (:foreground "#ff6c6b" :weight bold))
+          ("IN-PROGRESS" . (:foreground "#ECBE7B" :weight bold))
+          ("WAITING" . (:foreground "#a9a1e1" :weight bold))
+          ("DONE" . (:foreground "#98be65" :weight bold))
+          ("CANCELLED" . (:foreground "#5B6268" :weight bold))
+          ("IDEA" . (:foreground "#51afef" :weight bold))
+          ("PLANNING" . (:foreground "#46D9FF" :weight bold))
+          ("READY" . (:foreground "#a9a1e1" :weight bold))
+          ("COMPLETED" . (:foreground "#98be65" :weight bold))))
+
+  ;; Tags personnalisés
+  (setq org-tag-alist
+        '((:startgroup . nil)
+          ("@work" . ?w)
+          ("@home" . ?h)
+          ("@errands" . ?e)
+          (:endgroup . nil)
+          ("urgent" . ?u)
+          ("important" . ?i)
+          ("meeting" . ?m)
+          ("dev" . ?d)
+          ("bug" . ?b)
+          ("feature" . ?f)))
+
+  ;; Configuration de l'agenda
+  (setq org-agenda-span 7                    ; Vue sur 7 jours
+        org-agenda-start-on-weekday 1        ; Commence le lundi
+        org-agenda-start-day nil             ; Commence aujourd'hui
+        org-agenda-show-all-dates t
+        org-agenda-skip-scheduled-if-done t
+        org-agenda-skip-deadline-if-done t
+        org-agenda-skip-timestamp-if-done t)
+
+  ;; Vues personnalisées de l'agenda
+  (setq org-agenda-custom-commands
+        '(("d" "Dashboard"
+           ((agenda "" ((org-agenda-span 'day)
+                        (org-deadline-warning-days 7)))
+            (todo "IN-PROGRESS"
+                  ((org-agenda-overriding-header "En cours")))
+            (todo "TODO"
+                  ((org-agenda-overriding-header "À faire")
+                   (org-agenda-max-entries 5)))
+            (tags-todo "urgent"
+                       ((org-agenda-overriding-header "Urgent")))))
+
+          ("w" "Vue Travail"
+           ((tags-todo "@work"
+                       ((org-agenda-overriding-header "Tâches travail")))))
+
+          ("h" "Vue Maison"
+           ((tags-todo "@home"
+                       ((org-agenda-overriding-header "Tâches maison")))))
+
+          ("u" "Urgent"
+           ((tags-todo "urgent"
+                       ((org-agenda-overriding-header "Tâches urgentes")))))
+
+          ("n" "Prochaines 7 jours"
+           ((agenda ""
+                    ((org-agenda-span 7)
+                     (org-agenda-start-day "+0d")))))))
+
+  ;; Configuration des priorités
+  (setq org-priority-highest ?A
+        org-priority-lowest ?E
+        org-priority-default ?C
+        org-priority-faces
+        '((?A . (:foreground "#ff6c6b" :weight bold))
+          (?B . (:foreground "#ECBE7B" :weight bold))
+          (?C . (:foreground "#51afef"))
+          (?D . (:foreground "#a9a1e1"))
+          (?E . (:foreground "#5B6268"))))
+
+  ;; Archivage
+  (setq org-archive-location "~/org/archive/%s_archive::")
+
+  ;; Log quand une tâche est complétée
+  (setq org-log-done 'time
+        org-log-into-drawer t)
+
+  ;; Refile targets - pour déplacer des tâches entre fichiers
+  (setq org-refile-targets
+        '((nil :maxlevel . 3)
+          (org-agenda-files :maxlevel . 3)))
+  (setq org-refile-use-outline-path 'file
+        org-outline-path-complete-in-steps nil))
+
+;; Templates de capture pour créer rapidement des notes
+(after! org
+  (setq org-capture-templates
+        '(("t" "Tâche" entry (file+headline "~/org/tasks.org" "Inbox")
+           "* TODO %?\n  SCHEDULED: %t\n  %i\n  %a")
+
+          ("T" "Tâche avec deadline" entry (file+headline "~/org/tasks.org" "Inbox")
+           "* TODO %?\n  DEADLINE: %^t\n  %i\n  %a")
+
+          ("m" "Réunion" entry (file+headline "~/org/agenda.org" "Réunions")
+           "* MEETING %? :meeting:\n  SCHEDULED: %^t\n  %i")
+
+          ("j" "Journal" entry (file+datetree "~/org/journal.org")
+           "* %?\nEntered on %U\n  %i")
+
+          ("n" "Note" entry (file+headline "~/org/notes.org" "Notes")
+           "* %?\n  %i\n  %a")
+
+          ("i" "Idée" entry (file+headline "~/org/ideas.org" "Idées")
+           "* IDEA %?\n  %i\n  %U")
+
+          ("b" "Bug" entry (file+headline "~/org/work.org" "Bugs")
+           "* TODO %? :bug:\n  %i\n  %a")
+
+          ("f" "Feature" entry (file+headline "~/org/work.org" "Features")
+           "* TODO %? :feature:\n  %i\n  %a"))))
+
+;; Configuration Org Roam (équivalent Obsidian)
+(after! org-roam
+  (setq org-roam-directory "~/org/roam/")
+
+  ;; Templates pour org-roam
+  (setq org-roam-capture-templates
+        '(("d" "default" plain "%?"
+           :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+                              "#+title: ${title}\n#+date: %U\n\n")
+           :unnarrowed t)
+
+          ("p" "project" plain "* Objectifs\n\n%?\n\n* Tâches\n\n* Notes"
+           :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+                              "#+title: ${title}\n#+filetags: :project:\n#+date: %U\n\n")
+           :unnarrowed t)
+
+          ("n" "note" plain "%?"
+           :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+                              "#+title: ${title}\n#+filetags: :note:\n#+date: %U\n\n")
+           :unnarrowed t)))
+
+  ;; Afficher le graph dans le navigateur
+  (setq org-roam-graph-viewer (executable-find "firefox"))
+
+  ;; Sync automatique
+  (org-roam-db-autosync-mode))
+
+;; Raccourcis clavier pour Org mode
+(map! :leader
+      (:prefix ("o" . "org")
+       :desc "Org Agenda" "a" #'org-agenda
+       :desc "Org Capture" "c" #'org-capture
+       :desc "Org Todo List" "t" #'org-todo-list
+       :desc "Org Tags View" "m" #'org-tags-view
+       :desc "Org Store Link" "l" #'org-store-link
+       :desc "Org Insert Link" "L" #'org-insert-link
+       :desc "Org Refile" "r" #'org-refile
+       :desc "Org Archive" "A" #'org-archive-subtree)
+
+      (:prefix ("n" . "notes")
+       (:prefix ("r" . "roam")
+        :desc "Find node" "f" #'org-roam-node-find
+        :desc "Insert node" "i" #'org-roam-node-insert
+        :desc "Capture" "c" #'org-roam-capture
+        :desc "Graph" "g" #'org-roam-graph
+        :desc "Show node" "r" #'org-roam-buffer-toggle
+        :desc "Random node" "R" #'org-roam-node-random)
+       (:prefix ("j" . "journal")
+        :desc "Today" "j" #'org-journal-new-entry
+        :desc "Search" "s" #'org-journal-search)))
+
+;; Raccourcis dans les buffers org
+(map! :map org-mode-map
+      :localleader
+      :desc "Schedule" "s" #'org-schedule
+      :desc "Deadline" "d" #'org-deadline
+      :desc "Priority" "p" #'org-priority
+      :desc "Tags" "t" #'org-set-tags-command
+      :desc "Refile" "r" #'org-refile
+      :desc "Archive" "A" #'org-archive-subtree
+      :desc "Toggle" "," #'org-ctrl-c-ctrl-c)
+
+;; Configuration du journal
+(after! org-journal
+  (setq org-journal-dir "~/org/journal/"
+        org-journal-file-format "%Y-%m-%d.org"
+        org-journal-date-format "%A, %d %B %Y"
+        org-journal-enable-agenda-integration t))
+
+;; Amélioration visuelle
+(after! org
+  ;; Indentation automatique
+  (setq org-startup-indented t
+        org-hide-leading-stars t
+        org-odd-levels-only nil)
+
+  ;; Rendu des images
+  (setq org-startup-with-inline-images t)
+
+  ;; Latex preview
+  (setq org-preview-latex-default-process 'dvipng)
+
+  ;; Beautify bullets
+  (setq org-superstar-headline-bullets-list '("◉" "○" "✸" "✿" "✤" "✜" "◆" "▶"))
+
+  ;; Emphasis markers (gras, italique, etc.)
+  (setq org-hide-emphasis-markers t))
+
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
 ;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
