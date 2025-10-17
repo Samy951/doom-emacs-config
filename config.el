@@ -32,7 +32,7 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-homage-black)
+(setq doom-theme 'doom-gruvbox)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -205,7 +205,7 @@
 ;; Raccourcis clavier pour Org mode
 (map! :leader
       (:prefix ("o" . "org")
-       :desc "Org Agenda" "a" #'org-agenda
+       ;; :desc "Org Agenda" "a" #'org-agenda  ; Commenté: conflit avec Doom (utiliser SPC o a a)
        :desc "Org Capture" "c" #'org-capture
        :desc "Org Todo List" "t" #'org-todo-list
        :desc "Org Tags View" "m" #'org-tags-view
@@ -298,6 +298,8 @@
 
 ;; Configure lsp-mode with lsp-booster for performance
 (after! lsp-mode
+  ;; Disable company auto-configuration (we use corfu)
+  (setq lsp-completion-provider :none)
   ;; Enable lsp-booster for better performance
   (defun lsp-booster--advice-json-parse (old-fn &rest args)
     "Try to parse bytecode instead of json."
@@ -366,7 +368,10 @@
         lsp-signature-render-documentation t)
 
   ;; Enable code lens (show references, implementations inline)
-  (setq lsp-lens-enable t))
+  (setq lsp-lens-enable t)
+
+  ;; Enable GitHub Copilot
+  (setq lsp-copilot-enabled t))
 
 ;; Configure lsp-ui for optimal TypeScript/NestJS development
 (after! lsp-ui
