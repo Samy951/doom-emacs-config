@@ -32,7 +32,17 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-gruvbox)
+
+;; Add Rose Pine theme to load-path explicitly
+(add-to-list 'custom-theme-load-path
+             (expand-file-name "straight/build-30.2/doom-rose-pine-theme" doom-local-dir))
+
+(setq doom-theme 'doom-rose-pine)
+
+;; Personnalisation : fond totalement noir
+(custom-set-faces!
+  '(default :background "#000000")
+  '(solaire-default-face :background "#000000"))
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -212,16 +222,16 @@
        :desc "Org Archive" "A" #'org-archive-subtree)
 
       (:prefix ("n" . "notes")
-       (:prefix ("r" . "roam")
-        :desc "Find node" "f" #'org-roam-node-find
-        :desc "Insert node" "i" #'org-roam-node-insert
-        :desc "Capture" "c" #'org-roam-capture
-        :desc "Graph" "g" #'org-roam-graph
-        :desc "Show node" "r" #'org-roam-buffer-toggle
-        :desc "Random node" "R" #'org-roam-node-random)
-       (:prefix ("j" . "journal")
-        :desc "Today" "j" #'org-journal-new-entry
-        :desc "Search" "s" #'org-journal-search)))
+               (:prefix ("r" . "roam")
+                :desc "Find node" "f" #'org-roam-node-find
+                :desc "Insert node" "i" #'org-roam-node-insert
+                :desc "Capture" "c" #'org-roam-capture
+                :desc "Graph" "g" #'org-roam-graph
+                :desc "Show node" "r" #'org-roam-buffer-toggle
+                :desc "Random node" "R" #'org-roam-node-random)
+               (:prefix ("j" . "journal")
+                :desc "Today" "j" #'org-journal-new-entry
+                :desc "Search" "s" #'org-journal-search)))
 
 ;; Raccourcis dans les buffers org
 (map! :map org-mode-map
@@ -487,10 +497,10 @@
   ;; Personnaliser l'apparence de la ligne d'exécution courante
   ;; dap-mode utilise automatiquement des overlays pour marquer la ligne courante
   (custom-set-faces!
-   '(dap-ui-pending-breakpoint-face :background "#4c566a" :foreground "#d08770")
-   '(dap-ui-verified-breakpoint-face :background "#3b4252" :foreground "#a3be8c")
-   '(dap-ui-compile-errline :background "#bf616a" :foreground "#eceff4")
-   '(dap-stopped-stack-frame :background "#5e81ac" :foreground "#eceff4" :weight bold))
+    '(dap-ui-pending-breakpoint-face :background "#4c566a" :foreground "#d08770")
+    '(dap-ui-verified-breakpoint-face :background "#3b4252" :foreground "#a3be8c")
+    '(dap-ui-compile-errline :background "#bf616a" :foreground "#eceff4")
+    '(dap-stopped-stack-frame :background "#5e81ac" :foreground "#eceff4" :weight bold))
 
   ;; Activer hl-line-mode dans les buffers de debug pour mieux voir la ligne courante
   ;; Version simplifiée qui ne dépend pas de fonctions internes
@@ -574,74 +584,74 @@
   ;; Activer le support des fichiers launch.json de VSCode
   (setq dap-auto-configure-mode t)
 
-;; Raccourcis clavier pour DAP (SANS touches de fonction)
-;; Tout est accessible via SPC m d (local leader + d pour debug)
-(map! :map typescript-ts-mode-map
-      :localleader
-      (:prefix ("d" . "debug")
-       :desc "Toggle breakpoint" "b" #'dap-breakpoint-toggle
-       :desc "Debug test (current file)" "d" #'dap-debug
-       :desc "Debug last configuration" "l" #'dap-debug-last
-       :desc "Debug recent" "r" #'dap-debug-recent
-       :desc "Step over (next)" "n" #'dap-next
-       :desc "Step into" "i" #'dap-step-in
-       :desc "Step out" "o" #'dap-step-out
-       :desc "Continue" "c" #'dap-continue
-       :desc "Restart" "R" #'dap-debug-restart
-       :desc "Disconnect" "q" #'dap-disconnect
-       :desc "Delete breakpoint" "B" #'dap-breakpoint-delete
-       :desc "Delete all breakpoints" "D" #'dap-breakpoint-delete-all
-       :desc "Eval at point" "e" #'dap-eval-thing-at-point
-       :desc "Eval region" "E" #'dap-eval-region
-       :desc "Show UI panels" "u" #'dap-ui-show-many-windows
-       :desc "Hide UI panels" "U" #'dap-ui-hide-many-windows
-       :desc "REPL" "'" #'dap-ui-repl))
+  ;; Raccourcis clavier pour DAP (SANS touches de fonction)
+  ;; Tout est accessible via SPC m d (local leader + d pour debug)
+  (map! :map typescript-ts-mode-map
+        :localleader
+        (:prefix ("d" . "debug")
+         :desc "Toggle breakpoint" "b" #'dap-breakpoint-toggle
+         :desc "Debug test (current file)" "d" #'dap-debug
+         :desc "Debug last configuration" "l" #'dap-debug-last
+         :desc "Debug recent" "r" #'dap-debug-recent
+         :desc "Step over (next)" "n" #'dap-next
+         :desc "Step into" "i" #'dap-step-in
+         :desc "Step out" "o" #'dap-step-out
+         :desc "Continue" "c" #'dap-continue
+         :desc "Restart" "R" #'dap-debug-restart
+         :desc "Disconnect" "q" #'dap-disconnect
+         :desc "Delete breakpoint" "B" #'dap-breakpoint-delete
+         :desc "Delete all breakpoints" "D" #'dap-breakpoint-delete-all
+         :desc "Eval at point" "e" #'dap-eval-thing-at-point
+         :desc "Eval region" "E" #'dap-eval-region
+         :desc "Show UI panels" "u" #'dap-ui-show-many-windows
+         :desc "Hide UI panels" "U" #'dap-ui-hide-many-windows
+         :desc "REPL" "'" #'dap-ui-repl))
 
-;; Mêmes raccourcis pour les autres modes TypeScript/JavaScript
-(map! :map tsx-ts-mode-map
-      :localleader
-      (:prefix ("d" . "debug")
-       :desc "Toggle breakpoint" "b" #'dap-breakpoint-toggle
-       :desc "Debug test (current file)" "d" #'dap-debug
-       :desc "Debug last configuration" "l" #'dap-debug-last
-       :desc "Debug recent" "r" #'dap-debug-recent
-       :desc "Step over (next)" "n" #'dap-next
-       :desc "Step into" "i" #'dap-step-in
-       :desc "Step out" "o" #'dap-step-out
-       :desc "Continue" "c" #'dap-continue
-       :desc "Restart" "R" #'dap-debug-restart
-       :desc "Disconnect" "q" #'dap-disconnect
-       :desc "Delete breakpoint" "B" #'dap-breakpoint-delete
-       :desc "Delete all breakpoints" "D" #'dap-breakpoint-delete-all
-       :desc "Eval at point" "e" #'dap-eval-thing-at-point
-       :desc "Eval region" "E" #'dap-eval-region
-       :desc "Show UI panels" "u" #'dap-ui-show-many-windows
-       :desc "Hide UI panels" "U" #'dap-ui-hide-many-windows
-       :desc "REPL" "'" #'dap-ui-repl))
+  ;; Mêmes raccourcis pour les autres modes TypeScript/JavaScript
+  (map! :map tsx-ts-mode-map
+        :localleader
+        (:prefix ("d" . "debug")
+         :desc "Toggle breakpoint" "b" #'dap-breakpoint-toggle
+         :desc "Debug test (current file)" "d" #'dap-debug
+         :desc "Debug last configuration" "l" #'dap-debug-last
+         :desc "Debug recent" "r" #'dap-debug-recent
+         :desc "Step over (next)" "n" #'dap-next
+         :desc "Step into" "i" #'dap-step-in
+         :desc "Step out" "o" #'dap-step-out
+         :desc "Continue" "c" #'dap-continue
+         :desc "Restart" "R" #'dap-debug-restart
+         :desc "Disconnect" "q" #'dap-disconnect
+         :desc "Delete breakpoint" "B" #'dap-breakpoint-delete
+         :desc "Delete all breakpoints" "D" #'dap-breakpoint-delete-all
+         :desc "Eval at point" "e" #'dap-eval-thing-at-point
+         :desc "Eval region" "E" #'dap-eval-region
+         :desc "Show UI panels" "u" #'dap-ui-show-many-windows
+         :desc "Hide UI panels" "U" #'dap-ui-hide-many-windows
+         :desc "REPL" "'" #'dap-ui-repl))
 
-(map! :map js-ts-mode-map
-      :localleader
-      (:prefix ("d" . "debug")
-       :desc "Toggle breakpoint" "b" #'dap-breakpoint-toggle
-       :desc "Debug test (current file)" "d" #'dap-debug
-       :desc "Debug last configuration" "l" #'dap-debug-last
-       :desc "Debug recent" "r" #'dap-debug-recent
-       :desc "Step over (next)" "n" #'dap-next
-       :desc "Step into" "i" #'dap-step-in
-       :desc "Step out" "o" #'dap-step-out
-       :desc "Continue" "c" #'dap-continue
-       :desc "Restart" "R" #'dap-debug-restart
-       :desc "Disconnect" "q" #'dap-disconnect
-       :desc "Delete breakpoint" "B" #'dap-breakpoint-delete
-       :desc "Delete all breakpoints" "D" #'dap-breakpoint-delete-all
-       :desc "Eval at point" "e" #'dap-eval-thing-at-point
-       :desc "Eval region" "E" #'dap-eval-region
-       :desc "Show UI panels" "u" #'dap-ui-show-many-windows
-       :desc "Hide UI panels" "U" #'dap-ui-hide-many-windows
-       :desc "REPL" "'" #'dap-ui-repl))
+  (map! :map js-ts-mode-map
+        :localleader
+        (:prefix ("d" . "debug")
+         :desc "Toggle breakpoint" "b" #'dap-breakpoint-toggle
+         :desc "Debug test (current file)" "d" #'dap-debug
+         :desc "Debug last configuration" "l" #'dap-debug-last
+         :desc "Debug recent" "r" #'dap-debug-recent
+         :desc "Step over (next)" "n" #'dap-next
+         :desc "Step into" "i" #'dap-step-in
+         :desc "Step out" "o" #'dap-step-out
+         :desc "Continue" "c" #'dap-continue
+         :desc "Restart" "R" #'dap-debug-restart
+         :desc "Disconnect" "q" #'dap-disconnect
+         :desc "Delete breakpoint" "B" #'dap-breakpoint-delete
+         :desc "Delete all breakpoints" "D" #'dap-breakpoint-delete-all
+         :desc "Eval at point" "e" #'dap-eval-thing-at-point
+         :desc "Eval region" "E" #'dap-eval-region
+         :desc "Show UI panels" "u" #'dap-ui-show-many-windows
+         :desc "Hide UI panels" "U" #'dap-ui-hide-many-windows
+         :desc "REPL" "'" #'dap-ui-repl))
 
-;; Auto-load DAP pour les modes TypeScript/JavaScript
-(add-hook 'typescript-ts-mode-hook #'dap-mode)
-(add-hook 'tsx-ts-mode-hook #'dap-mode)
-(add-hook 'js-ts-mode-hook #'dap-mode)
-)  ;; Fin du bloc (after! dap-mode)
+  ;; Auto-load DAP pour les modes TypeScript/JavaScript
+  (add-hook 'typescript-ts-mode-hook #'dap-mode)
+  (add-hook 'tsx-ts-mode-hook #'dap-mode)
+  (add-hook 'js-ts-mode-hook #'dap-mode)
+  )  ;; Fin du bloc (after! dap-mode)

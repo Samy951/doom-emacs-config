@@ -55,3 +55,7 @@
 
 ;; Install dap-mode for debugging Node.js/TypeScript with NestJS
 (package! dap-mode)
+
+;; Install Rose Pine theme for Doom Emacs
+(package! doom-rose-pine-theme
+  :recipe (:host github :repo "donniebreve/rose-pine-doom-emacs"))
