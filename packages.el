@@ -53,5 +53,5 @@
 ;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
 ;; (unpin! t)
 
-;; Install dape for debugging Node.js/TypeScript with NestJS
-(package! dape)
+;; Install dap-mode for debugging Node.js/TypeScript with NestJS
+(package! dap-mode)

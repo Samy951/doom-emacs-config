@@ -160,9 +160,6 @@
           ("m" "Réunion" entry (file+headline "~/org/agenda.org" "Réunions")
            "* MEETING %? :meeting:\n  SCHEDULED: %^t\n  %i")
 
-          ("j" "Journal" entry (file+datetree "~/org/journal.org")
-           "* %?\nEntered on %U\n  %i")
-
           ("n" "Note" entry (file+headline "~/org/notes.org" "Notes")
            "* %?\n  %i\n  %a")
 
@@ -242,7 +239,15 @@
   (setq org-journal-dir "~/org/journal/"
         org-journal-file-format "%Y-%m-%d.org"
         org-journal-date-format "%A, %d %B %Y"
-        org-journal-enable-agenda-integration t))
+        org-journal-enable-agenda-integration t)
+
+  ;; Fonction helper pour org-capture
+  (defun org-journal-find-location ()
+    "Trouve ou crée l'entrée journal du jour pour org-capture."
+    (org-journal-new-entry t)
+    (unless (eq (point) (point-max))
+      (org-forward-heading-same-level 1))
+    (goto-char (point-max))))
 
 ;; Amélioration visuelle
 (after! org
@@ -415,9 +420,9 @@
 
 ;; Customize inlay hints to be distinct from comments (comments are green in homage-black)
 (custom-set-faces!
-  '(lsp-inlay-hint-face :foreground "#7c9fc9" :background nil :slant italic :height 0.9)
-  '(lsp-inlay-hint-type-face :foreground "#7c9fc9" :background nil :slant italic :height 0.9)
-  '(lsp-inlay-hint-parameter-face :foreground "#9d9fc9" :background nil :slant italic :height 0.9))
+  '(lsp-inlay-hint-face :foreground "#7c9fc9" :background unspecified :slant italic :height 0.9)
+  '(lsp-inlay-hint-type-face :foreground "#7c9fc9" :background unspecified :slant italic :height 0.9)
+  '(lsp-inlay-hint-parameter-face :foreground "#9d9fc9" :background unspecified :slant italic :height 0.9))
 
 ;; Force tree-sitter modes for TypeScript
 (add-to-list 'major-mode-remap-alist '(typescript-mode . typescript-ts-mode))
@@ -445,38 +450,198 @@
   (interactive)
   (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist)))
 
-;; Configure dape for Node.js/TypeScript debugging
-(after! dape
-  ;; Info buffers to the right (like VSCode)
-  (setq dape-buffer-window-arrangement 'right)
+;;; ============================================================================
+;;; Configuration DAP-mode pour NestJS/TypeScript debugging
+;;; ============================================================================
+;;;
+;;; USAGE POUR DEBUGGER NESTJS:
+;;; 1. Terminal: npm run start:debug
+;;; 2. Emacs: Ouvre ton fichier .ts
+;;; 3. Emacs: Ajoute "debugger;" dans ton code (les breakpoints visuels ne marchent pas avec ts-node)
+;;; 4. Emacs: SPC m d d -> sélectionne "NestJS::Attach"
+;;; 5. Fais ta requête HTTP
+;;; 6. Le debugger s'arrêtera au "debugger;"
+;;;
+;;; Pour les tests Jest: SPC m d d -> "Node::Jest Test Current File"
+;;; ============================================================================
 
-  ;; Enable inlay hints during debugging
-  (setq dape-inlay-hints t)
+(after! dap-mode
+  ;; Active les contrôles UI pour le debugging
+  (require 'dap-node)
+  (dap-node-setup)  ;; Installer automatiquement le debugger Node.js
 
-  ;; Save breakpoints between sessions
-  (add-hook 'kill-emacs-hook #'dape-breakpoint-save)
-  (add-hook 'after-init-hook #'dape-breakpoint-load)
+  ;; Configuration des features (SANS controls et tooltip qui causent window-live-p errors)
+  (setq dap-auto-configure-features '(sessions locals breakpoints expressions repl))
 
-  ;; Configuration personnalisée pour NestJS
-  ;; D'abord installer l'adapter: M-x dape-install-adapter RET js-debug RET
-  (add-to-list 'dape-configs
-               `(nestjs
-                 modes (typescript-ts-mode typescript-mode js-ts-mode js-mode)
-                 ensure dape-ensure-command
-                 fn (dape-config-autoport dape-config-tramp)
-                 command "node"
-                 command-args ["~/.config/emacs/.local/etc/dape/js-debug/src/dapDebugServer.js" :autoport]
-                 :type "pwa-node"
-                 :request "attach"
-                 :cwd dape-cwd-fn
-                 :address "127.0.0.1"
-                 :port 9229
-                 :skipFiles ["<node_internals>/**" "**/node_modules/**"]
-                 :sourceMaps t
-                 :resolveSourceMapLocations ["**" "!**/node_modules/**"]
-                 :outFiles ["${workspaceFolder}/dist/**/*.js"]
-                 :sourceMapPathOverrides (:./* "${workspaceFolder}/src/*"
-                                          :../../..//* "${workspaceFolder}/src/*"
-                                          :../../../..//* "${workspaceFolder}/src/*"
-                                          :webpack:///./* "${workspaceFolder}/*"
-                                          :webpack:///* "${workspaceFolder}/*"))))
+  ;; Active l'UI complète de DAP
+  (dap-ui-mode 1)
+
+  ;; NE PAS activer dap-ui-controls-mode - il cause des erreurs window-live-p
+  ;; NE PAS activer dap-tooltip-mode - il cause aussi des erreurs
+
+  ;; Configuration pour l'affichage des variables et de la ligne courante
+  (setq dap-ui-variable-length 100)  ;; Longueur max des variables affichées
+
+  ;; NE PAS configurer dap-ui-buffer-configurations - laisser les valeurs par défaut
+
+  ;; Personnaliser l'apparence de la ligne d'exécution courante
+  ;; dap-mode utilise automatiquement des overlays pour marquer la ligne courante
+  (custom-set-faces!
+   '(dap-ui-pending-breakpoint-face :background "#4c566a" :foreground "#d08770")
+   '(dap-ui-verified-breakpoint-face :background "#3b4252" :foreground "#a3be8c")
+   '(dap-ui-compile-errline :background "#bf616a" :foreground "#eceff4")
+   '(dap-stopped-stack-frame :background "#5e81ac" :foreground "#eceff4" :weight bold))
+
+  ;; Activer hl-line-mode dans les buffers de debug pour mieux voir la ligne courante
+  ;; Version simplifiée qui ne dépend pas de fonctions internes
+  (add-hook 'dap-stopped-hook
+            (lambda (arg)
+              (hl-line-mode 1)))
+
+  ;; Ouvrir TOUS les panneaux quand le debugger démarre
+  (add-hook 'dap-session-created-hook
+            (lambda (session)
+              (run-with-timer 0.1 nil #'dap-ui-show-many-windows)))
+
+  ;; Sauvegarde des breakpoints entre les sessions
+  (setq dap-breakpoints-file (expand-file-name ".dap-breakpoints" doom-cache-dir))
+
+  ;; Configuration pour Jest avec Node.js (d'après doc dap-mode)
+  (dap-register-debug-template
+   "Node::Jest Test Current File"
+   (list :type "node"
+         :request "launch"
+         :name "Jest Test Current File"
+         :program "${workspaceFolder}/node_modules/.bin/jest"
+         :args (list "--runInBand" "--no-cache" "--no-coverage" "${file}")
+         :cwd "${workspaceFolder}"
+         :sourceMaps t
+         :protocol "inspector"
+         :console "integratedTerminal"))
+
+  ;; Configuration pour Jest avec tous les tests
+  (dap-register-debug-template
+   "Node::Jest All Tests"
+   (list :type "node"
+         :request "launch"
+         :name "Jest All Tests"
+         :program "${workspaceFolder}/node_modules/.bin/jest"
+         :args (list "--runInBand" "--no-cache" "--no-coverage")
+         :cwd "${workspaceFolder}"
+         :sourceMaps t
+         :protocol "inspector"
+         :console "integratedTerminal"))
+
+  ;; Configuration pour Jest avec un test spécifique (e2e)
+  (dap-register-debug-template
+   "Node::Jest E2E Test"
+   (list :type "node"
+         :request "launch"
+         :name "Jest E2E Test"
+         :program "${workspaceFolder}/node_modules/.bin/jest"
+         :args (list "--config" "./test/jest-e2e.json" "--runInBand" "${file}")
+         :cwd "${workspaceFolder}"
+         :sourceMaps t
+         :protocol "inspector"
+         :console "integratedTerminal"))
+
+  ;; Configuration pour attacher à un process Node.js existant
+  (dap-register-debug-template
+   "Node::Attach to Process"
+   (list :type "node"
+         :request "attach"
+         :name "Attach to Process"
+         :port 9229
+         :address "localhost"
+         :sourceMaps t
+         :protocol "inspector"))
+
+  ;; Configuration pour attacher à NestJS déjà lancé en mode debug
+  ;; USAGE: Lance "npm run start:debug" dans un terminal, puis SPC m d d -> NestJS::Attach
+  (dap-register-debug-template
+   "NestJS::Attach"
+   (list :type "node"
+         :request "attach"
+         :name "Attach to NestJS"
+         :port 9229
+         :address "localhost"
+         :sourceMaps t
+         :protocol "inspector"
+         :restart t
+         :skipFiles (list "<node_internals>/**")
+         :program "__ignored"))  ;; Évite de demander un fichier à lancer
+
+  ;; Activer le support des fichiers launch.json de VSCode
+  (setq dap-auto-configure-mode t)
+
+;; Raccourcis clavier pour DAP (SANS touches de fonction)
+;; Tout est accessible via SPC m d (local leader + d pour debug)
+(map! :map typescript-ts-mode-map
+      :localleader
+      (:prefix ("d" . "debug")
+       :desc "Toggle breakpoint" "b" #'dap-breakpoint-toggle
+       :desc "Debug test (current file)" "d" #'dap-debug
+       :desc "Debug last configuration" "l" #'dap-debug-last
+       :desc "Debug recent" "r" #'dap-debug-recent
+       :desc "Step over (next)" "n" #'dap-next
+       :desc "Step into" "i" #'dap-step-in
+       :desc "Step out" "o" #'dap-step-out
+       :desc "Continue" "c" #'dap-continue
+       :desc "Restart" "R" #'dap-debug-restart
+       :desc "Disconnect" "q" #'dap-disconnect
+       :desc "Delete breakpoint" "B" #'dap-breakpoint-delete
+       :desc "Delete all breakpoints" "D" #'dap-breakpoint-delete-all
+       :desc "Eval at point" "e" #'dap-eval-thing-at-point
+       :desc "Eval region" "E" #'dap-eval-region
+       :desc "Show UI panels" "u" #'dap-ui-show-many-windows
+       :desc "Hide UI panels" "U" #'dap-ui-hide-many-windows
+       :desc "REPL" "'" #'dap-ui-repl))
+
+;; Mêmes raccourcis pour les autres modes TypeScript/JavaScript
+(map! :map tsx-ts-mode-map
+      :localleader
+      (:prefix ("d" . "debug")
+       :desc "Toggle breakpoint" "b" #'dap-breakpoint-toggle
+       :desc "Debug test (current file)" "d" #'dap-debug
+       :desc "Debug last configuration" "l" #'dap-debug-last
+       :desc "Debug recent" "r" #'dap-debug-recent
+       :desc "Step over (next)" "n" #'dap-next
+       :desc "Step into" "i" #'dap-step-in
+       :desc "Step out" "o" #'dap-step-out
+       :desc "Continue" "c" #'dap-continue
+       :desc "Restart" "R" #'dap-debug-restart
+       :desc "Disconnect" "q" #'dap-disconnect
+       :desc "Delete breakpoint" "B" #'dap-breakpoint-delete
+       :desc "Delete all breakpoints" "D" #'dap-breakpoint-delete-all
+       :desc "Eval at point" "e" #'dap-eval-thing-at-point
+       :desc "Eval region" "E" #'dap-eval-region
+       :desc "Show UI panels" "u" #'dap-ui-show-many-windows
+       :desc "Hide UI panels" "U" #'dap-ui-hide-many-windows
+       :desc "REPL" "'" #'dap-ui-repl))
+
+(map! :map js-ts-mode-map
+      :localleader
+      (:prefix ("d" . "debug")
+       :desc "Toggle breakpoint" "b" #'dap-breakpoint-toggle
+       :desc "Debug test (current file)" "d" #'dap-debug
+       :desc "Debug last configuration" "l" #'dap-debug-last
+       :desc "Debug recent" "r" #'dap-debug-recent
+       :desc "Step over (next)" "n" #'dap-next
+       :desc "Step into" "i" #'dap-step-in
+       :desc "Step out" "o" #'dap-step-out
+       :desc "Continue" "c" #'dap-continue
+       :desc "Restart" "R" #'dap-debug-restart
+       :desc "Disconnect" "q" #'dap-disconnect
+       :desc "Delete breakpoint" "B" #'dap-breakpoint-delete
+       :desc "Delete all breakpoints" "D" #'dap-breakpoint-delete-all
+       :desc "Eval at point" "e" #'dap-eval-thing-at-point
+       :desc "Eval region" "E" #'dap-eval-region
+       :desc "Show UI panels" "u" #'dap-ui-show-many-windows
+       :desc "Hide UI panels" "U" #'dap-ui-hide-many-windows
+       :desc "REPL" "'" #'dap-ui-repl))
+
+;; Auto-load DAP pour les modes TypeScript/JavaScript
+(add-hook 'typescript-ts-mode-hook #'dap-mode)
+(add-hook 'tsx-ts-mode-hook #'dap-mode)
+(add-hook 'js-ts-mode-hook #'dap-mode)
+)  ;; Fin du bloc (after! dap-mode)
